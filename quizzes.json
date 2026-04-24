@@ -1,0 +1,102 @@
+[
+  {
+    "id": "quiz-1",
+    "title": "Computer Science Hardware basics",
+    "questions": [
+      {
+        "question": "What does CPU stand for?",
+        "options": [
+          "Central Process Unit",
+          "Computer Personal Unit",
+          "Central Processing Unit",
+          "Central Processor Unit"
+        ],
+        "correct": "Central Processing Unit"
+      },
+      {
+        "question": "In distributing computing, what is concurrency?",
+        "options": [
+          "Running multiple processes one after another",
+          "Executing multiple tasks at the same time",
+          "Putting processes to sleep to save power",
+          "Replicating code across servers"
+        ],
+        "correct": "Executing multiple tasks at the same time"
+      }
+    ]
+  },
+  {
+    "id": "quiz-1775726711597",
+    "title": "DC ",
+    "questions": [
+      {
+        "question": "what is DC",
+        "options": [
+          "something ",
+          "something good",
+          "hari",
+          "hari2"
+        ],
+        "correct": "hari"
+      }
+    ]
+  },
+  {
+    "id": "quiz-1775728802101",
+    "title": "States quiz",
+    "questions": [
+      {
+        "question": "city in maharastra",
+        "options": [
+          "Dhule",
+          "delhi",
+          "ahemdabad ",
+          "indore "
+        ],
+        "correct": "Dhule"
+      }
+    ]
+  },
+  {
+    "id": "quiz-1775737662983",
+    "title": "Time management",
+    "questions": [
+      {
+        "question": "What is tm",
+        "options": [
+          "A",
+          "B",
+          "Timepass",
+          "Vedashree"
+        ],
+        "correct": "Vedashree"
+      },
+      {
+        "question": "what is lehar",
+        "options": [
+          "galicjh",
+          "achi ladki",
+          "leechud",
+          "tharki"
+        ],
+        "correct": "tharki"
+      }
+    ]
+  },
+  {
+    "id": "quiz-1775813443067",
+    "title": "SNeha",
+    "questions": [
+      {
+        "question": "What is the time complexity of Binary Search?",
+        "options": [
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "correct": "4"
+      }
+    ]
+  }
+]

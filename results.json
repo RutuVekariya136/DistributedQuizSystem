@@ -1,0 +1,162 @@
+[
+  {
+    "date": "2026-04-09T09:19:52.370Z",
+    "scores": []
+  },
+  {
+    "date": "2026-04-09T09:25:34.832Z",
+    "quizTitle": "DC ",
+    "scores": []
+  },
+  {
+    "date": "2026-04-09T09:26:20.019Z",
+    "quizTitle": "DC ",
+    "scores": [
+      {
+        "name": "harikrishna",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "date": "2026-04-09T09:39:38.691Z",
+    "quizTitle": "DC ",
+    "scores": []
+  },
+  {
+    "date": "2026-04-09T09:40:32.577Z",
+    "quizTitle": "Computer Science Hardware basics",
+    "scores": []
+  },
+  {
+    "date": "2026-04-09T10:00:52.636Z",
+    "quizTitle": "States quiz",
+    "scores": [
+      {
+        "name": "adi",
+        "score": 1
+      },
+      {
+        "name": "hari",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "date": "2026-04-09T10:11:08.506Z",
+    "quizTitle": "Computer Science Hardware basics",
+    "scores": [
+      {
+        "name": "hari",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "date": "2026-04-09T11:24:19.110Z",
+    "quizTitle": "Computer Science Hardware basics",
+    "roomCode": "WENUBW",
+    "scores": [
+      {
+        "name": "Lehar",
+        "score": 1,
+        "tabSwitches": 4
+      },
+      {
+        "name": "rutu",
+        "score": 0,
+        "tabSwitches": 0
+      }
+    ],
+    "analytics": [
+      {
+        "questionIndex": 0,
+        "question": "What does CPU stand for?",
+        "correctAnswer": "Central Processing Unit",
+        "totalPlayers": 2,
+        "totalAnswered": 0,
+        "totalCorrect": 0,
+        "accuracy": 0,
+        "avgResponseTime": 0,
+        "dropOffRate": 100
+      },
+      {
+        "questionIndex": 1,
+        "question": "In distributing computing, what is concurrency?",
+        "correctAnswer": "Executing multiple tasks at the same time",
+        "totalPlayers": 2,
+        "totalAnswered": 2,
+        "totalCorrect": 1,
+        "accuracy": 50,
+        "avgResponseTime": 3305,
+        "dropOffRate": 0
+      }
+    ]
+  },
+  {
+    "date": "2026-04-10T08:25:19.795Z",
+    "quizTitle": "Time management",
+    "roomCode": "RJCDXT",
+    "scores": [
+      {
+        "name": "hari",
+        "score": 0,
+        "tabSwitches": 0
+      }
+    ],
+    "analytics": [
+      {
+        "questionIndex": 0,
+        "question": "What is tm",
+        "correctAnswer": "Vedashree",
+        "totalPlayers": 1,
+        "totalAnswered": 1,
+        "totalCorrect": 0,
+        "accuracy": 0,
+        "avgResponseTime": 1848,
+        "dropOffRate": 0
+      },
+      {
+        "questionIndex": 1,
+        "question": "what is lehar",
+        "correctAnswer": "tharki",
+        "totalPlayers": 1,
+        "totalAnswered": 1,
+        "totalCorrect": 0,
+        "accuracy": 0,
+        "avgResponseTime": 3311,
+        "dropOffRate": 0
+      }
+    ]
+  },
+  {
+    "date": "2026-04-10T09:31:40.918Z",
+    "quizTitle": "SNeha",
+    "roomCode": "VX5XZ8",
+    "scores": [
+      {
+        "name": "hari",
+        "score": 1,
+        "tabSwitches": 0
+      },
+      {
+        "name": "rutu",
+        "score": 1,
+        "tabSwitches": 0
+      }
+    ],
+    "analytics": [
+      {
+        "questionIndex": 0,
+        "question": "What is the time complexity of Binary Search?",
+        "correctAnswer": "4",
+        "totalPlayers": 2,
+        "totalAnswered": 2,
+        "totalCorrect": 2,
+        "accuracy": 100,
+        "avgResponseTime": 5701,
+        "dropOffRate": 0
+      }
+    ]
+  }
+]

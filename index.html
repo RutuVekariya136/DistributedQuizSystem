@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4f46e5">
+    <title>QuizPortal — Student View</title>
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js" defer></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .view { display: none; }
+        .view.active { display: flex; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .reaction-fly { position: fixed; bottom: 0; z-index: 50; font-size: 2rem; animation: floatUp 2.5s ease-out forwards; pointer-events: none; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-100vh) scale(1.2); opacity: 0; } }
+    </style>
+</head>
+<body class="h-full text-slate-200 antialiased selection:bg-indigo-500/30">
+    <!-- Anti-cheat warning -->
+    <div id="tab-warning" class="hidden fixed inset-x-0 top-0 z-[100] bg-rose-600 px-4 py-2.5 text-center text-sm font-bold text-white shadow-lg ring-1 ring-white/20">
+        ⚠️ DO NOT SWITCH TABS. Your activity has been flagged.
+    </div>
+
+    <div class="flex min-h-full items-center justify-center p-4">
+        
+        <!-- Login Screen -->
+        <div id="login-screen" class="view active w-full max-w-md flex-col space-y-8 rounded-2xl bg-slate-900 p-8 shadow-2xl ring-1 ring-white/10">
+            <div class="text-center">
+                <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600/10 text-indigo-500 ring-1 ring-indigo-500/20 mb-4">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-3.652A11.954 11.954 0 0110 12c0-1.903-.446-3.702-1.243-5.302m4.486 8.352c.93-.15 1.867-.25 2.812-.301m-2.812-2.148c.93-.15 1.867-.25 2.812-.301M16 21h-2m2-12h-2m-4 0h-2M12 7V3m0 0a1 1 0 00-1-1h-2a1 1 0 00-1 1m4 0a1 1 0 011 1v4m-4 0v4m0 0a1 1 0 01-1 1H7a1 1 0 01-1-1v-4m4 0V7" /></svg>
+                </div>
+                <h1 class="text-3xl font-bold tracking-tight text-white">QuizPortal</h1>
+                <p class="mt-2 text-slate-400">Join a Quiz Room</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
+                    <input type="text" id="username" placeholder="Enter your name" class="block w-full rounded-lg bg-slate-800 border-0 py-3 text-white shadow-sm ring-1 ring-inset ring-slate-700 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1.5">Room Code</label>
+                    <input type="text" id="roomcode" maxlength="6" placeholder="AX6Y2Z" class="block w-full text-center rounded-lg bg-slate-800 border-0 py-4 text-2xl font-bold tracking-[0.5em] text-indigo-400 shadow-sm ring-1 ring-inset ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-500 placeholder:text-slate-600 uppercase">
+                </div>
+                <button id="join-btn" class="flex w-full justify-center rounded-lg bg-indigo-600 px-3 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all active:scale-[0.98]">
+                    Join Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- Waiting Lobby -->
+        <div id="lobby-screen" class="view hidden w-full max-w-xl flex-col rounded-2xl bg-slate-900 p-8 shadow-2xl ring-1 ring-white/10 text-center">
+            <div id="room-code-display" class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2"></div>
+            <h1 id="lobby-title" class="text-2xl font-bold text-white mb-2 text-center">Connected</h1>
+            <p class="text-slate-400 mb-8 text-center">Waiting for the teacher to start the quiz...</p>
+
+            <div class="mt-4 rounded-xl bg-slate-950/50 p-6 ring-1 ring-inset ring-white/5">
+                <div class="flex items-center justify-between py-2 border-b border-white/5 mb-4">
+                    <span class="text-sm font-medium text-slate-400">Total Participants</span>
+                    <span id="user-count" class="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-bold text-indigo-400 ring-1 ring-inset ring-indigo-400/20">0</span>
+                </div>
+                <ul id="users-waiting" class="flex flex-wrap gap-2"></ul>
+            </div>
+
+            <div class="mt-8 flex justify-center gap-3">
+                <button onclick="sendReaction('👍')" class="h-12 w-12 rounded-full bg-slate-800 text-xl flex items-center justify-center hover:bg-slate-700 transition-all active:scale-90 border border-white/5">👍</button>
+                <button onclick="sendReaction('⚡')" class="h-12 w-12 rounded-full bg-slate-800 text-xl flex items-center justify-center hover:bg-slate-700 transition-all active:scale-90 border border-white/5">⚡</button>
+                <button onclick="sendReaction('🔥')" class="h-12 w-12 rounded-full bg-slate-800 text-xl flex items-center justify-center hover:bg-slate-700 transition-all active:scale-90 border border-white/5">🔥</button>
+                <button onclick="sendReaction('👏')" class="h-12 w-12 rounded-full bg-slate-800 text-xl flex items-center justify-center hover:bg-slate-700 transition-all active:scale-90 border border-white/5">👏</button>
+            </div>
+
+            <!-- Starting Countdown Overlay -->
+            <div id="start-countdown-overlay" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-sm rounded-2xl">
+                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-4">Quiz Starting</p>
+                <div id="start-countdown-number" class="text-8xl font-black text-white animate-pulse">5</div>
+                <p class="mt-6 text-sm font-bold text-slate-400 italic">Get ready...</p>
+            </div>
+        </div>
+
+        <!-- Active Question -->
+        <div id="quiz-screen" class="view hidden w-full max-w-3xl flex-col rounded-2xl bg-slate-900 p-8 shadow-2xl ring-1 ring-white/10">
+            <div class="flex items-center justify-between mb-8">
+                <span id="question-progress" class="rounded-full bg-slate-800 px-3 py-1 text-xs font-bold text-slate-400 ring-1 ring-inset ring-white/10 uppercase tracking-wider">Question 1 of 1</span>
+                <div id="timer" class="text-3xl font-black tabular-nums text-white">20</div>
+            </div>
+
+            <h2 id="question-text" class="text-2xl font-semibold text-white leading-relaxed mb-10">...</h2>
+
+            <div id="options-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2"></div>
+
+            <div class="mt-12 rounded-xl bg-slate-950/50 p-6 ring-1 ring-inset ring-white/5">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+                    <span>Progress</span>
+                    <span id="consensus-text">0 / 0 Students Finished</span>
+                </div>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                    <div id="consensus-bar" class="h-full bg-indigo-500 transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Intermission -->
+        <div id="intermission-screen" class="view hidden w-full max-w-2xl flex-col rounded-2xl bg-slate-900 p-8 shadow-2xl ring-1 ring-white/10">
+            <h1 class="text-3xl font-bold text-white mb-2">Live Standings</h1>
+            <p class="text-slate-400 mb-8">Next question starting soon...</p>
+            <ul id="intermission-list" class="space-y-3"></ul>
+        </div>
+
+        <!-- Final Results -->
+        <div id="results-screen" class="view hidden w-full max-w-2xl flex-col rounded-2xl bg-slate-900 p-8 shadow-2xl ring-1 ring-white/10 text-center">
+            <div class="text-indigo-400 mb-4 flex justify-center">
+                <svg class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+            </div>
+            <h1 class="text-4xl font-black text-white mb-2">Well Done!</h1>
+            <p class="text-slate-400 mb-10">Review your final standing among participants.</p>
+            <ul id="final-score-list" class="space-y-3 mb-10 text-left"></ul>
+            <button onclick="window.location.reload()" class="w-full inline-flex justify-center rounded-lg bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 transition-all ring-1 ring-white/10">
+                Back to Portal
+            </button>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed right-6 top-6 z-[200] flex flex-col gap-3 max-w-sm"></div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>

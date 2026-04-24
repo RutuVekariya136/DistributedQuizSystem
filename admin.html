@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
+    <title>QuizPortal — Teacher Dashboard</title>
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-active { @apply bg-indigo-500/10 text-white ring-1 ring-inset ring-indigo-500/20 border-l-4 border-indigo-500; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .status-pulse { animation: pulse-custom 2s infinite; }
+        @keyframes pulse-custom { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } }
+        /* Professional Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body class="h-full text-slate-300 antialiased selection:bg-indigo-500/30">
+    <div class="flex h-full overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-72 flex-shrink-0 bg-slate-950 border-r border-white/5 flex flex-col shadow-2xl">
+            <div class="p-8 pb-4">
+                <div class="flex items-center gap-4 group cursor-default">
+                    <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">Q</div>
+                    <div>
+                        <span class="text-xl font-black text-white tracking-tight block">QuizPortal</span>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] leading-none">Teacher Suite</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-4 py-8 space-y-1">
+                <button id="nav-rooms" class="nav-item group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-bold transition-all hover:bg-white/5 data-[active=true]:bg-indigo-500/10 data-[active=true]:text-white data-[active=true]:ring-1 data-[active=true]:ring-inset data-[active=true]:ring-indigo-500/20 data-[active=true]:border-l-4 data-[active=true]:border-indigo-500" data-active="true">
+                    <span class="mr-3 text-lg opacity-80 group-hover:scale-125 transition-transform">🏠</span> Active Rooms
+                </button>
+                <button id="nav-quizzes" class="nav-item group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-bold text-slate-500 transition-all hover:bg-white/5 data-[active=true]:bg-indigo-500/10 data-[active=true]:text-white data-[active=true]:ring-1 data-[active=true]:ring-inset data-[active=true]:ring-indigo-500/20 data-[active=true]:border-l-4 data-[active=true]:border-indigo-500">
+                    <span class="mr-3 text-lg opacity-80 group-hover:scale-125 transition-transform">📋</span> My Quizzes
+                </button>
+                <button id="nav-create" class="nav-item group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-bold text-slate-500 transition-all hover:bg-white/5 data-[active=true]:bg-indigo-500/10 data-[active=true]:text-white data-[active=true]:ring-1 data-[active=true]:ring-inset data-[active=true]:ring-indigo-500/20 data-[active=true]:border-l-4 data-[active=true]:border-indigo-500">
+                    <span class="mr-3 text-lg opacity-80 group-hover:scale-125 transition-transform">✏️</span> Quiz Editor
+                </button>
+                <button id="nav-history" class="nav-item group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-bold text-slate-500 transition-all hover:bg-white/5 data-[active=true]:bg-indigo-500/10 data-[active=true]:text-white data-[active=true]:ring-1 data-[active=true]:ring-inset data-[active=true]:ring-indigo-500/20 data-[active=true]:border-l-4 data-[active=true]:border-indigo-500">
+                    <span class="mr-3 text-lg opacity-80 group-hover:scale-125 transition-transform">📊</span> History
+                </button>
+            </nav>
+
+            <div class="p-6 mt-auto">
+                <div class="rounded-2xl bg-indigo-500/10 p-4 ring-1 ring-inset ring-indigo-500/20">
+                    <div class="flex items-center gap-3">
+                        <div class="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-black text-indigo-400">ADM</div>
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-white leading-none mb-1">Administrator</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 status-pulse"></span>
+                                <span class="text-[9px] font-black text-emerald-500/80 uppercase tracking-widest">System Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-900 border-l border-white/5">
+            <header class="h-20 flex-shrink-0 flex items-center justify-between px-10 border-b border-white/5 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10 text-white">
+                <div>
+                    <h1 id="header-title" class="text-2xl font-black tracking-tight">Active Rooms</h1>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="text-right hidden sm:block">
+                        <span class="block text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Network Time</span>
+                        <span id="current-time" class="block text-sm font-black tabular-nums">00:00:00</span>
+                    </div>
+                    <div class="h-10 w-px bg-white/5"></div>
+                    <button class="px-4 py-2 rounded-lg bg-slate-800 text-xs font-bold ring-1 ring-inset ring-white/5 hover:bg-slate-700 transition-all">Export Results</button>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-10">
+                <div class="max-w-7xl mx-auto">
+                    <!-- Dashboard views -->
+                    <div id="panel-rooms" class="panel-content space-y-8 animate-fade-in">
+                        <div id="active-rooms-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                    </div>
+
+                    <div id="panel-quizzes" class="panel-content hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-white"></div>
+
+                    <div id="panel-create" class="panel-content hidden max-w-4xl mx-auto">
+                        <div class="glass-card rounded-3xl p-10 shadow-2xl ring-1 ring-white/10">
+                            <h2 class="text-2xl font-black text-white mb-2">Create New Quiz</h2>
+                            <p class="text-slate-400 text-sm mb-10">Add questions and answers to build a new assessment.</p>
+                            
+                            <div class="space-y-8">
+                                <div>
+                                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Quiz Title</label>
+                                    <input type="text" id="new-quiz-title" placeholder="e.g. Science Final Exam" class="block w-full rounded-2xl bg-slate-950/50 border-0 py-4 px-6 text-white ring-1 ring-white/10 focus:ring-2 focus:ring-indigo-500 transition-all text-lg font-bold">
+                                </div>
+
+                                <div id="questions-builder" class="space-y-12"></div>
+
+                                <div class="flex items-center gap-4 pt-6">
+                                    <button id="btn-add-q" class="flex-1 rounded-2xl p-4 text-sm font-black uppercase tracking-widest text-slate-400 border border-dashed border-white/10 hover:border-indigo-500/50 hover:text-indigo-400 transition-all">+ Add Question</button>
+                                    <button id="btn-save-quiz" class="flex-1 rounded-2xl bg-indigo-600 p-4 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 hover:-translate-y-1 transition-all">Save Quiz</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="panel-history" class="panel-content hidden grid grid-cols-1 lg:grid-cols-2 gap-8 text-white"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Quiz Session Details -->
+    <div id="room-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-xl"></div>
+        <div class="relative w-full max-w-6xl h-[90vh] glass-card rounded-[40px] shadow-3xl flex flex-col overflow-hidden ring-1 ring-white/10">
+            <header class="p-10 pb-6 flex items-center justify-between border-b border-white/5">
+                <div>
+                    <h2 id="modal-title" class="text-2xl font-black text-white mb-1 leading-none uppercase tracking-tight">Quiz Room</h2>
+                    <div id="modal-code" class="text-4xl font-black text-indigo-400 font-mono tracking-[0.3em]">----</div>
+                </div>
+                <button onclick="closeModal()" class="h-12 w-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white ring-1 ring-white/10 transition-all">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </header>
+
+            <nav class="flex px-10 gap-2 mb-2 border-b border-white/5">
+                <button id="mtab-participants" onclick="switchModalTab('participants')" class="px-6 py-4 text-xs font-black uppercase tracking-widest text-indigo-400 border-b-2 border-indigo-500 transition-all">Students</button>
+                <button id="mtab-analytics" onclick="switchModalTab('analytics')" class="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all">Results</button>
+            </nav>
+
+            <div class="flex-1 overflow-y-auto p-10 scroll-smooth">
+                <div id="modal-participants">
+                    <div class="rounded-3xl border border-white/5 overflow-hidden shadow-inner">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-indigo-500/5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                    <th class="px-8 py-5">Student Name</th>
+                                    <th class="px-8 py-5">Latency</th>
+                                    <th class="px-8 py-5">Connection</th>
+                                    <th class="px-8 py-5 text-right">Activity Alerts</th>
+                                </tr>
+                            </thead>
+                            <tbody id="room-participants-body" class="divide-y divide-white/5"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="modal-analytics" class="hidden space-y-12"></div>
+            </div>
+
+            <footer class="p-10 border-t border-white/5 flex items-center justify-between bg-slate-900/40">
+                <div class="flex items-center gap-4">
+                    <span id="modal-status-badge" class="px-4 py-1.5 rounded-full bg-slate-800 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ring-1 ring-inset ring-white/5">WAITING</span>
+                    <span class="h-1 w-1 rounded-full bg-slate-700"></span>
+                    <span id="modal-player-count" class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">0 Students Connected</span>
+                </div>
+                <button id="modal-start-btn" onclick="startRoom()" class="px-10 py-3.5 rounded-2xl bg-indigo-600 text-sm font-black uppercase tracking-widest text-white hover:bg-indigo-500 hover:-translate-y-1 shadow-2xl shadow-indigo-600/30 active:scale-95 transition-all">Start Quiz</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Toast Layer -->
+    <div id="toast-container" class="fixed top-8 right-8 z-[200] flex flex-col gap-4 max-w-md"></div>
+
+    <script>
+        const socket = io();
+        let currentRoomCode = null;
+        let allRoomsData = {};
+
+        // Auto-Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-GB', { hour12: false });
+        }, 1000);
+
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const isError = type === 'error';
+            const bg = isError ? 'bg-rose-950/80 border-rose-500/50' : 'bg-slate-950/80 border-indigo-500/50';
+            const iconColor = isError ? 'text-rose-500' : 'text-indigo-500';
+            
+            toast.className = `flex items-center gap-4 p-5 rounded-2xl shadow-3xl backdrop-blur-xl border-l-4 ${bg} animate-bounce-in min-w-[320px] ring-1 ring-white/5`;
+            toast.innerHTML = `
+                <div class="h-10 w-10 flex-shrink-0 rounded-xl bg-white/5 flex items-center justify-center ${iconColor} text-xl">${isError ? '🚨' : '✨'}</div>
+                <div class="flex-1">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">${isError ? 'Error' : 'Notification'}</p>
+                    <p class="text-xs font-bold text-white">${msg}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.transform = 'scale(0.9) translateX(40px)';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 400);
+            }, 6000);
+        }
+
+        // ── Navigation Engine ──
+        const navigation = {
+            panels: ['rooms', 'quizzes', 'create', 'history'],
+            titles: { rooms: 'Active Rooms', quizzes: 'My Quizzes', create: 'Quiz Editor', history: 'Quiz History' }
+        };
+
+        navigation.panels.forEach(p => {
+            const btn = document.getElementById(`nav-${p}`);
+            btn.addEventListener('click', () => {
+                navigation.panels.forEach(pp => {
+                    const b = document.getElementById(`nav-${pp}`);
+                    const pan = document.getElementById(`panel-${pp}`);
+                    b.setAttribute('data-active', 'false');
+                    b.classList.remove('text-white');
+                    b.classList.add('text-slate-500');
+                    pan.classList.add('hidden');
+                });
+                btn.setAttribute('data-active', 'true');
+                btn.classList.add('text-white');
+                btn.classList.remove('text-slate-500');
+                document.getElementById(`panel-${p}`).classList.remove('hidden');
+                document.getElementById('header-title').innerText = navigation.titles[p];
+                
+                if (p === 'rooms') renderActiveRooms();
+                if (p === 'quizzes') fetchQuizzes();
+                if (p === 'history') fetchHistory();
+            });
+        });
+
+        // ── Room Manager ──
+        async function renderActiveRooms() {
+            const data = await fetch('/api/rooms').then(r => r.json());
+            const list = document.getElementById('active-rooms-list');
+            list.innerHTML = '';
+            if (!data.length) {
+                list.innerHTML = '<div class="col-span-full py-20 text-center glass-card rounded-3xl border-dashed border-2"><p class="text-slate-500 font-bold uppercase tracking-widest text-xs">No active rooms at the moment.</p></div>';
+                return;
+            }
+            data.forEach(r => {
+                allRoomsData[r.code] = r;
+                const card = document.createElement('div');
+                card.className = 'group relative glass-card p-8 rounded-[32px] hover:scale-[1.03] transition-all cursor-pointer ring-1 ring-inset ring-white/5 hover:ring-indigo-500/50 shadow-2xl';
+                card.onclick = () => openRoom(r.code);
+                
+                const statusColor = r.status === 'active' ? 'bg-emerald-500' : r.status === 'finished' ? 'bg-slate-700' : 'bg-amber-500';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="font-mono text-3xl font-black text-indigo-400 tracking-[0.2em] leading-none">${r.code}</div>
+                        <div class="flex items-center gap-2">
+                             <span class="h-2 w-2 rounded-full ${statusColor} ${r.status === 'active' ? 'status-pulse' : ''}"></span>
+                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">${r.status === 'waiting' ? 'Ready' : r.status === 'active' ? 'Live' : 'Ended'}</span>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-black text-white mb-2 leading-tight">${r.quizTitle}</h3>
+                    <div class="flex items-center gap-4 mt-8 pt-6 border-t border-white/5">
+                        <div class="flex -space-x-2">
+                            <div class="h-6 w-6 rounded-full bg-slate-800 ring-2 ring-slate-900 flex items-center justify-center text-[11px] font-bold text-slate-500">S1</div>
+                            <div class="h-6 w-6 rounded-full bg-indigo-600/20 ring-2 ring-slate-900 flex items-center justify-center text-[11px] font-bold text-indigo-400">+${r.participantCount}</div>
+                        </div>
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">${r.participantCount} Students Joined</span>
+                    </div>
+                    <div class="absolute bottom-6 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <div class="h-10 w-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-600/40">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                         </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        // ── Quiz Manager ──
+        async function fetchQuizzes() {
+            const data = await fetch('/api/quizzes').then(r => r.json());
+            const list = document.getElementById('panel-quizzes');
+            list.innerHTML = '';
+            data.forEach(q => {
+                const card = document.createElement('div');
+                card.className = 'glass-card p-8 rounded-3xl hover:-translate-y-2 transition-all flex flex-col border border-white/5';
+                card.innerHTML = `
+                    <div class="mb-8">
+                        <h3 class="text-xl font-black text-white mb-2 break-words leading-tight">${q.title}</h3>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">${q.questions.length} Questions</p>
+                    </div>
+                    <button class="mt-auto w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-black uppercase tracking-widest text-white transition-all shadow-xl shadow-indigo-600/20 active:scale-95" onclick="createRoom('${q.id}')">Open Room</button>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        async function createRoom(quizId) {
+            const res = await fetch('/api/rooms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quizId })
+            });
+            const data = await res.json();
+            if (data.code) {
+                showToast(`Room Open: ${data.code}`);
+                openRoom(data.code);
+                document.getElementById('nav-rooms').click();
+            }
+        }
+
+        // ── Room Results Modal ──
+        function openRoom(code) {
+            currentRoomCode = code;
+            document.getElementById('modal-code').innerText = code;
+            document.getElementById('modal-title').innerText = allRoomsData[code]?.quizTitle || 'Quiz Room';
+            document.getElementById('room-modal').classList.remove('hidden');
+            socket.emit('join_admin_room', code);
+            updateModalStatus(allRoomsData[code]?.status);
+        }
+
+        function closeModal() {
+            document.getElementById('room-modal').classList.add('hidden');
+            currentRoomCode = null;
+        }
+
+        socket.on('admin_notification', (data) => {
+            if (data.type === 'tab_switch') {
+                showToast(`Student ${data.user} switched tabs! (${data.count}x)`, 'error');
+                // Mobile shake/violent feedback
+                if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+            }
+        });
+
+        function updateModalStatus(status) {
+            const b = document.getElementById('modal-status-badge');
+            const s = document.getElementById('modal-start-btn');
+            b.innerText = status.toUpperCase();
+            if (status === 'waiting') {
+                b.className = 'px-4 py-1.5 rounded-full bg-amber-500/10 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 ring-1 ring-inset ring-amber-500/20';
+                s.classList.remove('hidden', 'opacity-50', 'pointer-events-none');
+                s.disabled = false;
+                s.innerText = 'Start Quiz';
+            } else if (status === 'starting') {
+                b.className = 'px-4 py-1.5 rounded-full bg-indigo-500/10 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 ring-1 ring-inset ring-indigo-500/20 status-pulse';
+                s.classList.remove('hidden');
+                s.disabled = true;
+                s.classList.add('opacity-50', 'pointer-events-none');
+            } else if (status === 'active') {
+                b.className = 'px-4 py-1.5 rounded-full bg-emerald-500/10 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 ring-1 ring-inset ring-emerald-500/20 status-pulse';
+                s.classList.add('hidden');
+            } else if (status === 'finished') {
+                b.className = 'px-4 py-1.5 rounded-full bg-slate-800 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500';
+                s.classList.add('hidden');
+            }
+        }
+
+        function startRoom() {
+            if (currentRoomCode) {
+                socket.emit('start_quiz', currentRoomCode);
+                showToast('Quiz started!');
+                
+                // Immediate UI feedback
+                const b = document.getElementById('modal-status-badge');
+                const s = document.getElementById('modal-start-btn');
+                b.innerText = 'STARTING';
+                b.className = 'px-4 py-1.5 rounded-full bg-indigo-500/10 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 ring-1 ring-inset ring-indigo-500/20 status-pulse';
+                s.innerText = 'Preparing...';
+                s.disabled = true;
+                s.classList.add('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        socket.on('quiz_starting', data => {
+            updateModalStatus('starting');
+            const s = document.getElementById('modal-start-btn');
+            if (s) {
+                s.innerText = `Starting in ${data.countdown || 5}s`;
+                s.classList.add('opacity-50', 'pointer-events-none');
+            }
+        });
+
+        socket.on('countdown_tick', count => {
+            const s = document.getElementById('modal-start-btn');
+            if (s) {
+                s.innerText = count > 0 ? `Starting in ${count}s` : 'Quiz is Live';
+            }
+            if (count <= 0) {
+                updateModalStatus('active');
+            }
+        });
+
+        function switchModalTab(tab) {
+            const tabs = ['participants', 'analytics'];
+            tabs.forEach(t => {
+                const b = document.getElementById(`mtab-${t}`);
+                const pan = document.getElementById(`modal-${t}`);
+                if (t === tab) {
+                    b.classList.remove('text-slate-500');
+                    b.classList.add('text-indigo-400', 'border-indigo-500', 'border-b-2');
+                    pan.classList.remove('hidden');
+                } else {
+                    b.classList.add('text-slate-500');
+                    b.classList.remove('text-indigo-400', 'border-indigo-500', 'border-b-2');
+                    pan.classList.add('hidden');
+                }
+            });
+        }
+
+        socket.on('network_topology_update', (nodes) => {
+            if (!currentRoomCode) return;
+            const body = document.getElementById('room-participants-body');
+            document.getElementById('modal-player-count').innerText = `${nodes.length} Students Connected`;
+            body.innerHTML = '';
+            if (!nodes.length) {
+                body.innerHTML = '<tr><td colspan="4" class="px-8 py-20 text-center text-xs font-black uppercase tracking-widest text-slate-600">Waiting for students to join...</td></tr>';
+                return;
+            }
+            nodes.forEach(n => {
+                const tr = document.createElement('tr');
+                tr.className = 'group hover:bg-white/[0.02] transition-colors';
+                const warning = n.tabSwitches > 0 
+                    ? `<span class="inline-flex items-center gap-2 rounded-xl bg-rose-500/10 px-4 py-2 text-[10px] font-black text-rose-500 ring-1 ring-inset ring-rose-500/20 uppercase tracking-widest animate-pulse">Switch Count: ${n.tabSwitches}</span>`
+                    : `<span class="text-[10px] font-black text-slate-700 uppercase tracking-widest">Studying</span>`;
+                
+                tr.innerHTML = `
+                    <td class="px-8 py-6">
+                        <div class="flex items-center gap-4">
+                            <div class="h-2 w-2 rounded-full ${n.status === 'healthy' ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]' : 'bg-rose-500'}"></div>
+                            <span class="font-bold text-white text-sm">${n.name} ${n.streak >= 3 ? '🔥' : ''}</span>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6 font-mono font-bold text-xs text-slate-500">${n.latency}ms</td>
+                    <td class="px-8 py-6">
+                        <span class="text-[10px] font-black uppercase tracking-widest ${n.status === 'healthy' ? 'text-emerald-500/80' : 'text-rose-500'}">${n.status === 'healthy' ? 'Connected' : 'Lagging'}</span>
+                    </td>
+                    <td class="px-8 py-6 text-right">${warning}</td>
+                `;
+                body.appendChild(tr);
+            });
+        });
+
+        socket.on('quiz_ended', ({ analytics, topPerformers, results }) => {
+            updateModalStatus('finished');
+            renderAnalytics(analytics, topPerformers, results);
+        });
+
+        function renderAnalytics(analytics, topPerformers, results) {
+            const el = document.getElementById('modal-analytics');
+            if (!analytics?.length) { el.innerHTML = '<p class="text-slate-600 font-bold uppercase tracking-widest italic text-center py-20">Calculating results...</p>'; return; }
+
+            const podium = (topPerformers || results || []).slice(0, 3).map((p, i) => `
+                <div class="flex items-center justify-between p-6 rounded-3xl bg-slate-950/40 border border-white/5 group hover:bg-indigo-500/5 transition-all">
+                    <div class="flex items-center gap-6">
+                        <div class="h-12 w-12 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center text-lg font-black ${i==0?'text-amber-400':i==1?'text-slate-300':'text-orange-400'}">${i+1}</div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Student Name</p>
+                            <p class="text-md font-black text-white">${p.name}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-black text-indigo-400 tabular-nums">${p.score} <span class="text-[10px] uppercase font-bold text-slate-600">POINTS</span></p>
+                        <p class="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-1">${Math.round((p.avgResponseTime || 0) / 100) / 10}s Speed</p>
+                    </div>
+                </div>
+            `).join('');
+
+            const grid = analytics.map(a => `
+                <tr class="hover:bg-white/[0.01]">
+                    <td class="px-8 py-6 text-sm font-bold text-white max-w-sm truncate">${a.question}</td>
+                    <td class="px-8 py-6">
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden min-w-[60px]">
+                                <div class="h-full ${a.accuracy >= 70 ? 'bg-emerald-500' : a.accuracy >= 40 ? 'bg-amber-500' : 'bg-rose-500'}" style="width: ${a.accuracy}%"></div>
+                            </div>
+                            <span class="text-xs font-black text-white w-10 text-right">${a.accuracy}%</span>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6 text-xs font-black text-slate-500 tabular-nums">${(a.avgResponseTime || 0)/1000}s</td>
+                    <td class="px-8 py-6 text-xs font-black text-rose-500/80">${a.dropOffRate}%</td>
+                    <td class="px-8 py-6 text-right text-[10px] font-black text-slate-400 tracking-tighter">${a.totalAnswered} / ${a.totalPlayers}</td>
+                </tr>
+            `).join('');
+
+            el.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
+                    <div class="lg:col-span-2 space-y-6">
+                        <h3 class="text-xs font-black text-indigo-400 uppercase tracking-[0.2em] pl-2 flex items-center gap-2">
+                             <span class="h-1 w-1 bg-indigo-400 rounded-full"></span> Top Performers Podium
+                        </h3>
+                        <div class="space-y-4">${podium}</div>
+                    </div>
+                    <div class="lg:col-span-3 space-y-6">
+                        <h3 class="text-xs font-black text-indigo-400 uppercase tracking-[0.2em] pl-2 flex items-center gap-2">
+                             <span class="h-1 w-1 bg-indigo-400 rounded-full"></span> Question Analytics
+                        </h3>
+                        <div class="rounded-3xl border border-white/5 overflow-hidden">
+                            <table class="w-full text-left">
+                                <thead class="bg-indigo-500/5">
+                                    <tr class="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                                        <th class="px-8 py-4">Question</th>
+                                        <th class="px-8 py-4">Accuracy</th>
+                                        <th class="px-8 py-4">Speed</th>
+                                        <th class="px-8 py-4 text-rose-900">Drop</th>
+                                        <th class="px-8 py-4 text-right">Students</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5">${grid}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            switchModalTab('analytics');
+        }
+
+        // ── Quiz Editor ──
+        const qBuilder = document.getElementById('questions-builder');
+        let qCount = 0;
+
+        document.getElementById('btn-add-q').addEventListener('click', () => {
+            qCount++;
+            const div = document.createElement('div');
+            div.className = 'glass-card p-10 rounded-[40px] border border-white/5 hover:border-indigo-500/30 transition-all';
+            div.innerHTML = `
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="h-10 w-10 rounded-2xl bg-indigo-500 flex items-center justify-center text-white font-black">#${qCount}</div>
+                    <div>
+                        <h4 class="text-lg font-black text-white">Question Details</h4>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest tracking-[0.1em]">Create a new question</p>
+                    </div>
+                </div>
+                <div class="space-y-8 text-white">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Question Text</label>
+                        <textarea class="q-text block w-full rounded-2xl bg-slate-950/50 border-0 py-4 px-6 text-white ring-1 ring-white/10 focus:ring-2 focus:ring-indigo-500 transition-all font-bold" rows="2" placeholder="Type the question here..."></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" class="opt block w-full rounded-xl bg-slate-950/50 border-0 py-4 px-6 text-sm text-white ring-1 ring-white/10 focus:ring-indigo-500/50 font-bold" placeholder="Option 1">
+                        <input type="text" class="opt block w-full rounded-xl bg-slate-950/50 border-0 py-4 px-6 text-sm text-white ring-1 ring-white/10 focus:ring-indigo-500/50 font-bold" placeholder="Option 2">
+                        <input type="text" class="opt block w-full rounded-xl bg-slate-950/50 border-0 py-4 px-6 text-sm text-white ring-1 ring-white/10 focus:ring-indigo-500/50 font-bold" placeholder="Option 3">
+                        <input type="text" class="opt block w-full rounded-xl bg-slate-950/50 border-0 py-4 px-6 text-sm text-white ring-1 ring-white/10 focus:ring-indigo-500/50 font-bold" placeholder="Option 4">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-3">Correct Answer</label>
+                        <input type="text" class="correct-ans block w-full rounded-2xl bg-emerald-500/5 border-0 py-4 px-6 text-emerald-400 ring-1 ring-emerald-500/50 focus:ring-emerald-500 font-black tracking-widest" placeholder="Matches one of the options above">
+                    </div>
+                </div>
+            `;
+            qBuilder.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        document.getElementById('btn-save-quiz').addEventListener('click', async () => {
+            const title = document.getElementById('new-quiz-title').value.trim();
+            if (!title) return showToast('Context Title Required', 'error');
+            const blocks = document.querySelectorAll('.q-text');
+            if (!blocks.length) return showToast('Min 1 question module required', 'error');
+            
+            const questions = [];
+            const allBlocks = document.querySelectorAll('.q-text');
+            const optSets = document.querySelectorAll('.q-block'); // fixed manually
+            const parents = document.querySelectorAll('#questions-builder > div');
+            
+            for (let block of parents) {
+                const qT = block.querySelector('.q-text').value.trim();
+                const opts = Array.from(block.querySelectorAll('.opt')).map(i => i.value.trim()).filter(Boolean);
+                const corr = block.querySelector('.correct-ans').value.trim();
+                
+                if (!qT || opts.length < 2 || !corr) return showToast(`Quiz data is incomplete`, 'error');
+                if (!opts.includes(corr)) return showToast(`Key Mismatch in Module`, 'error');
+                
+                questions.push({ question: qT, options: opts, correct: corr });
+            }
+
+            const res = await fetch('/api/quizzes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, questions })
+            });
+            if (res.ok) {
+                showToast('New Quiz Saved Successfully.');
+                document.getElementById('new-quiz-title').value = '';
+                qBuilder.innerHTML = '';
+                qCount = 0;
+                document.getElementById('nav-quizzes').click();
+            }
+        });
+
+        // ── Archive Terminal ──
+        async function fetchHistory() {
+            const data = await fetch('/api/results').then(r => r.json());
+            const list = document.getElementById('panel-history');
+            list.innerHTML = '';
+            data.slice().reverse().forEach(r => {
+                const card = document.createElement('div');
+                card.className = 'glass-card p-10 rounded-[32px] border border-white/5 space-y-8 flex flex-col shadow-2xl';
+                const rows = r.scores.map((s, i) => `
+                    <div class="flex items-center justify-between py-2 group/row">
+                        <span class="text-xs font-bold text-slate-400 group-hover/row:text-white transition-colors">${i+1}. ${s.name}</span>
+                        <span class="text-xs font-black text-indigo-500 tabular-nums">${s.score}</span>
+                    </div>
+                `).join('');
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                             <h3 class="text-lg font-black text-white italic tracking-tight mb-1">${r.quizTitle}</h3>
+                             <p class="text-[9px] font-black text-slate-600 uppercase tracking-widest">RM CODE ${r.roomCode}</p>
+                        </div>
+                        <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest opacity-60">${new Date(r.date).toLocaleDateString()}</span>
+                    </div>
+                    <div class="space-y-1 bg-slate-950/50 rounded-2xl p-6 border border-white/5 flex-1">${rows || '<p class="text-[9px] text-slate-700 font-black italic uppercase">No Activity Logged</p>'}</div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        renderActiveRooms();
+    </script>
+</body>
+</html>

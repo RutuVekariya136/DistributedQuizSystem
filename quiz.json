@@ -1,0 +1,25 @@
+{
+  "title": "Computer Science Quiz",
+  "questions": [
+    {
+      "question": "What does CPU stand for?",
+      "options": ["Central Process Unit", "Computer Personal Unit", "Central Processing Unit", "Central Processor Unit"],
+      "correct": "Central Processing Unit"
+    },
+    {
+      "question": "In distributing computing, what is concurrency?",
+      "options": ["Running multiple processes one after another", "Executing multiple tasks at the same time", "Putting processes to sleep to save power", "Replicating code across servers"],
+      "correct": "Executing multiple tasks at the same time"
+    },
+    {
+      "question": "What is the primary function of Socket.io?",
+      "options": ["Database management", "Styling websites", "Real-time, bidirectional communication", "Running shell scripts"],
+      "correct": "Real-time, bidirectional communication"
+    },
+    {
+      "question": "Which of these is not a relational database?",
+      "options": ["MySQL", "PostgreSQL", "MongoDB", "Oracle"],
+      "correct": "MongoDB"
+    }
+  ]
+}
