@@ -16,6 +16,14 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
 // ─────────────────────────────────────────────────────
 // Multi-Room State
 // rooms[code] = { code, quiz, users, timer, analytics, status, ... }
@@ -42,7 +50,7 @@ function createRoom(quiz) {
         timeLeft: 0,
         questionStartTime: null,
         analytics: [],
-        status: 'waiting', // 'waiting' | 'active' | 'finished'
+        status: 'waiting',
         createdAt: new Date().toISOString()
     };
     return code;
@@ -111,7 +119,6 @@ function sendQuestionToRoom(code) {
         room.questionStartTime = Date.now();
         room.status = 'active';
 
-        // Reset per-user answer state
         for (const id in room.users) {
             room.users[id].answeredCurrent = false;
             room.users[id].currentAnswerTime = null;
@@ -119,7 +126,6 @@ function sendQuestionToRoom(code) {
         }
         broadcastConsensus(code);
 
-        // Anti-Cheat: Send SHUFFLED options per socket individually
         io.sockets.adapter.rooms.get(code)?.forEach(socketId => {
             const shuffledOptions = shuffleArray(question.options);
             io.to(socketId).emit('new_question', {
@@ -159,7 +165,6 @@ function handleTimeUp(code) {
     if (!room || !room.quiz) return;
     const question = room.quiz.questions[room.currentQuestionIndex];
 
-    // Collect analytics for this question
     const responses = Object.values(room.users).map(u => ({
         name: u.name,
         answered: u.answeredCurrent,
@@ -235,9 +240,6 @@ function finishQuiz(code) {
     setTimeout(() => { delete rooms[code]; }, 60000);
 }
 
-// ─────────────────────────────────────────────────────
-// Heartbeat (per-room topology)
-// ─────────────────────────────────────────────────────
 setInterval(() => {
     const timestamp = Date.now();
     io.emit('ping', timestamp);
@@ -254,9 +256,6 @@ setInterval(() => {
     }
 }, 2000);
 
-// ─────────────────────────────────────────────────────
-// REST APIs
-// ─────────────────────────────────────────────────────
 app.get('/api/quizzes', (req, res) => res.json(getQuizzes()));
 
 app.post('/api/quizzes', (req, res) => {
@@ -304,9 +303,6 @@ app.get('/api/rooms/:code', (req, res) => {
     res.json({ code: room.code, status: room.status, quizTitle: room.quiz?.title, participantCount: Object.keys(room.users).length });
 });
 
-// ─────────────────────────────────────────────────────
-// WebSockets
-// ─────────────────────────────────────────────────────
 io.on('connection', (socket) => {
 
     socket.on('pong', (ts) => {
@@ -322,7 +318,6 @@ io.on('connection', (socket) => {
         if (!room) return socket.emit('error_message', 'Room not found. Check the code and try again.');
         if (room.status === 'finished') return socket.emit('error_message', 'This assessment has already ended.');
 
-        // Reconnection: match by name
         const existingEntry = Object.entries(room.users).find(([, u]) => u.name.toLowerCase() === name.toLowerCase());
         if (existingEntry) {
             const [oldId, oldUser] = existingEntry;
@@ -344,12 +339,10 @@ io.on('connection', (socket) => {
 
         io.to(code).emit('user_list', Object.values(room.users).map(u => u.name));
 
-        // Sync with starting state if countdown is in progress
         if (room.status === 'starting') {
             socket.emit('quiz_starting', { title: room.quiz.title, countdown: room.countdown });
         }
 
-        // Fault tolerance: sync question if quiz is active
         if (room.status === 'active' && room.currentQuestionIndex >= 0) {
             const q = room.quiz.questions[room.currentQuestionIndex];
             socket.emit('new_question', {
@@ -368,7 +361,6 @@ io.on('connection', (socket) => {
         if (room) {
             socket.join(room.code);
             socket.data.roomCode = room.code;
-            // Send initial topology
             const nodes = Object.entries(room.users).map(([id, u]) => ({
                 id, name: u.name,
                 latency: u.latency || 0,
@@ -384,7 +376,7 @@ io.on('connection', (socket) => {
     socket.on('start_quiz', (code) => {
         const room = rooms[code];
         if (!room || room.status !== 'waiting') return;
-        
+
         room.status = 'starting';
         room.countdown = 5;
 
@@ -445,7 +437,6 @@ io.on('connection', (socket) => {
         if (rooms[code]?.users[socket.id]) {
             const user = rooms[code].users[socket.id];
             user.tabSwitches = (user.tabSwitches || 0) + 1;
-            // Immediate notification for admin
             io.to(code).emit('admin_notification', {
                 type: 'tab_switch',
                 user: user.name,
@@ -465,7 +456,6 @@ io.on('connection', (socket) => {
         const code = socket.data.roomCode;
         if (code && rooms[code]) {
             broadcastConsensus(code);
-            // Keep user state for reconnect — do NOT delete
         }
     });
 });
