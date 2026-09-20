@@ -8,9 +8,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { pingTimeout: 60000, pingInterval: 10000 });
 
-const PORT = 3000;
-app.use(express.static(path.join(__dirname, 'public')));
+const PORT = process.env.PORT || 3000;
+app.use(express.static(__dirname));
 app.use(express.json());
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // ─────────────────────────────────────────────────────
 // Multi-Room State
@@ -466,4 +470,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => console.log(`QuizPortal running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`QuizPortal running on port ${PORT}`));
